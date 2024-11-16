@@ -8,7 +8,6 @@ use super::verify_input_file;
 pub enum Outputformat {
     Json,
     Yaml,
-    Toml,
 }
 
 #[derive(Debug, Parser)]
@@ -38,7 +37,6 @@ impl From<Outputformat> for &'static str {
         match format {
             Outputformat::Json => "json",
             Outputformat::Yaml => "yaml",
-            Outputformat::Toml => "toml",
         }
     }
 }
@@ -50,7 +48,6 @@ impl FromStr for Outputformat {
         match s {
             "json" => Ok(Outputformat::Json),
             "yaml" => Ok(Outputformat::Yaml),
-            "toml" => Ok(Outputformat::Toml),
             _ => Err(anyhow::anyhow!("Invalid format")),
         }
     }
