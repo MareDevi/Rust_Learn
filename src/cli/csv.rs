@@ -2,7 +2,7 @@ use clap::Parser;
 use std::fmt;
 use std::str::FromStr;
 
-use super::verify_input_file;
+use super::verify_file;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Outputformat {
@@ -12,7 +12,7 @@ pub enum Outputformat {
 
 #[derive(Debug, Parser)]
 pub struct CsvOpts {
-    #[arg(short, long, value_parser = verify_input_file)]
+    #[arg(short, long, value_parser = verify_file)]
     pub input: String,
     
     #[arg(short, long)]

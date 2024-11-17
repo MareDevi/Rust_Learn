@@ -6,7 +6,7 @@ const LOWER: &[u8] = b"abcdefghijkmnopqrstuvwxyz";
 const NUMBER: &[u8] = b"123456789";
 const SYMBOL: &[u8] = b"!@#$%^&*()-_=+[]{}|;:,.<>?/~";
 
-pub fn process_genpass(length: u8, upper: bool, lower: bool, number: bool, symbol: bool) -> anyhow::Result<()> {
+pub fn process_genpass(length: u8, upper: bool, lower: bool, number: bool, symbol: bool) -> anyhow::Result<String> {
     let mut rng = rand::thread_rng();
     let mut password = Vec::new();
     let mut chars = Vec::new();
@@ -40,8 +40,7 @@ pub fn process_genpass(length: u8, upper: bool, lower: bool, number: bool, symbo
 
     password.shuffle(&mut rng);
     
-    let password = password.iter().collect::<String>();
-    println!("{}", password);
+    let password: String = password.iter().collect();
 
     // output password strength in stderr
     let estimate = zxcvbn(&password, &[]);
@@ -55,6 +54,6 @@ pub fn process_genpass(length: u8, upper: bool, lower: bool, number: bool, symbo
         _ => eprintln!("Password strength: Unknown"),
     }
     
-    Ok(())
+    Ok(password)
 }
 
