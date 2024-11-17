@@ -1,9 +1,12 @@
-use std::{fs, io::Read, path::Path, vec};
+use std::{fs, io::{Read, Write}, path::Path, vec};
 use crate::{read_input, TextSignFormat};
 use anyhow::Result;
 use base64::{prelude::BASE64_URL_SAFE_NO_PAD as URL_SAFE_NO_PAD, Engine};
+use chacha20poly1305::{
+    aead::{Aead, AeadCore, KeyInit, OsRng},
+    ChaCha20Poly1305
+};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use rand::rngs::OsRng;
 
 use super::process_genpass;
 
@@ -80,6 +83,55 @@ pub fn process_generate(format: TextSignFormat) -> Result<Vec<Vec<u8>>> {
         TextSignFormat::Blake3 => Blake3::generate(),
         TextSignFormat::Ed25519 => Ed25519Signer::generate(),
     }
+}
+
+pub fn process_encrypt(input: &str, key: &str, output: &str) -> Result<()> {
+    let mut reader = read_input(input)?;
+    let mut buf = Vec::new();
+    reader.read_to_end(&mut buf)?;
+    let key = fs::read(key)?;
+    let key = chacha20poly1305::Key::from_slice(&key);
+    let cipher = ChaCha20Poly1305::new(key);
+    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let ciphertext = cipher.encrypt(&nonce, buf.as_ref()).unwrap();
+
+    match output {
+        "-" => {
+            println!("nonce: {}", URL_SAFE_NO_PAD.encode(&nonce));
+            println!("ciphertext: {}", URL_SAFE_NO_PAD.encode(&ciphertext));
+        }
+        _ => {
+            let mut file = fs::File::create(output)?;
+            writeln!(file, "nonce: {}", URL_SAFE_NO_PAD.encode(&nonce))?;
+            writeln!(file, "ciphertext: {}", URL_SAFE_NO_PAD.encode(&ciphertext))?;
+        }
+    }
+    Ok(())
+}
+
+pub fn process_decrypt(input: &str, key: &str, output: &str) -> Result<()> {
+    let mut reader = read_input(input)?;
+    let mut buf = String::new();
+    reader.read_to_string(&mut buf)?;
+    let key = fs::read(key)?;
+    let key = chacha20poly1305::Key::from_slice(&key);
+    let cipher = ChaCha20Poly1305::new(key);
+    let mut lines = buf.lines();
+    let nonce = URL_SAFE_NO_PAD.decode(lines.next().unwrap())?;
+    let ciphertext = URL_SAFE_NO_PAD.decode(lines.next().unwrap())?;
+    let nonce = chacha20poly1305::Nonce::from_slice(&nonce);
+    let plaintext = cipher.decrypt(&nonce, ciphertext.as_ref()).unwrap();
+
+    match output {
+        "-" => {
+            println!("plaintext: {}", String::from_utf8_lossy(&plaintext));
+        }
+        _ => {
+            let mut file = fs::File::create(output)?;
+            writeln!(file, "plaintext: {}", String::from_utf8_lossy(&plaintext))?;
+        }
+    }
+    Ok(())
 }
 
 impl TextSign for Blake3 {
@@ -222,6 +274,20 @@ mod tests {
         let sig = signing_key.sign(&mut &data[..])?;
         println!("sig: {}", URL_SAFE_NO_PAD.encode(&sig));
         assert!(verifying_key.verify(&mut &data[..], &sig)?);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encrypt_decrypt() -> Result<()> {
+        let key = process_genpass(32, true, true, true, true)?;
+        let key = key.as_bytes().to_vec();
+        let key = chacha20poly1305::Key::from_slice(&key);
+        let cipher = ChaCha20Poly1305::new(key);
+        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+        let data = b"hello world";
+        let ciphertext = cipher.encrypt(&nonce, data.as_ref()).unwrap();
+        let plaintext = cipher.decrypt(&nonce, ciphertext.as_ref()).unwrap();
+        assert_eq!(data.as_ref(), plaintext.as_slice());
         Ok(())
     }
 }

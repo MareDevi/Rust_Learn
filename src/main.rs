@@ -1,7 +1,7 @@
 use std::fs;
 
 use clap::Parser;
-use rcli::{process_csv, process_decode, process_encode, process_generate, process_genpass, process_text_sign, process_text_verify, Base64SubCommand, Opts, SubCommand, TextSignFormat, TextSubCommand};
+use rcli::{process_decrypt, process_encrypt, process_csv, process_decode, process_encode, process_generate, process_genpass, process_text_sign, process_text_verify, Base64SubCommand, Opts, SubCommand, TextSignFormat, TextSubCommand};
 
 
 fn main() -> anyhow::Result<()> {
@@ -60,6 +60,12 @@ fn main() -> anyhow::Result<()> {
                             fs::write(name.join("public_key"), &key[1])?;
                         }
                     }
+                }
+                TextSubCommand::Encrypt(opts) => {
+                    process_encrypt(&opts.input, &opts.key, &opts.output)?;
+                }
+                TextSubCommand::Decrypt(opts) => {
+                    process_decrypt(&opts.input, &opts.key, &opts.output)?;
                 }
             }
         }

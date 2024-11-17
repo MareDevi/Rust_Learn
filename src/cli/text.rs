@@ -1,6 +1,7 @@
 use core::fmt;
 use std::{path::PathBuf, str::FromStr};
 use clap::Parser;
+
 use super::{verify_file, verify_path};
 
 #[derive(Debug, Parser)]
@@ -11,6 +12,10 @@ pub enum TextSubCommand {
     Verify(TextVerifyOpts),
     #[command(name = "generate", about = "Generate a new key")]
     Generate(TextKeyGenerateOpts),
+    #[command(name = "encrypt", about = "Encrypt a message with a shared key")]
+    Encrypt(TextEncryptOpts),
+    #[command(name = "decrypt", about = "Decrypt a message with a shared key")]
+    Decrypt(TextDecryptOpts),
 }
 
 #[derive(Debug, Parser)]
@@ -41,6 +46,26 @@ pub struct TextKeyGenerateOpts {
     pub format: TextSignFormat,
     #[arg(short, long, value_parser = verify_path)]
     pub output: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+pub struct TextEncryptOpts {
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
+    pub input: String,
+    #[arg(short, long, value_parser = verify_file)]
+    pub key: String,
+    #[arg(short, long, default_value = "-")]
+    pub output: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct TextDecryptOpts {
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
+    pub input: String,
+    #[arg(short, long, value_parser = verify_file)]
+    pub key: String,
+    #[arg(short, long, default_value = "-")]
+    pub output: String,
 }
 
 #[derive(Debug, Clone, Copy)]
