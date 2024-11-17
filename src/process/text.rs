@@ -93,17 +93,20 @@ pub fn process_encrypt(input: &str, key: &str, output: &str) -> Result<()> {
     let key = chacha20poly1305::Key::from_slice(&key);
     let cipher = ChaCha20Poly1305::new(key);
     let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
-    let ciphertext = cipher.encrypt(&nonce, buf.as_ref()).unwrap();
+    let ciphertext = cipher.encrypt(&nonce, buf.as_ref()).map_err(|e| anyhow::anyhow!(e))?;
+
+    let encoded_nonce = URL_SAFE_NO_PAD.encode(&nonce);
+    let encoded_ciphertext = URL_SAFE_NO_PAD.encode(&ciphertext);
 
     match output {
         "-" => {
-            println!("nonce: {}", URL_SAFE_NO_PAD.encode(&nonce));
-            println!("ciphertext: {}", URL_SAFE_NO_PAD.encode(&ciphertext));
+            println!("nonce: {}", encoded_nonce);
+            println!("ciphertext: {}", encoded_ciphertext);
         }
         _ => {
             let mut file = fs::File::create(output)?;
-            writeln!(file, "nonce: {}", URL_SAFE_NO_PAD.encode(&nonce))?;
-            writeln!(file, "ciphertext: {}", URL_SAFE_NO_PAD.encode(&ciphertext))?;
+            writeln!(file, "nonce: {}", encoded_nonce)?;
+            writeln!(file, "ciphertext: {}", encoded_ciphertext)?;
         }
     }
     Ok(())
@@ -117,10 +120,10 @@ pub fn process_decrypt(input: &str, key: &str, output: &str) -> Result<()> {
     let key = chacha20poly1305::Key::from_slice(&key);
     let cipher = ChaCha20Poly1305::new(key);
     let mut lines = buf.lines();
-    let nonce = URL_SAFE_NO_PAD.decode(lines.next().unwrap())?;
-    let ciphertext = URL_SAFE_NO_PAD.decode(lines.next().unwrap())?;
+    let nonce = URL_SAFE_NO_PAD.decode(lines.next().unwrap().strip_prefix("nonce: ").unwrap())?;
+    let ciphertext = URL_SAFE_NO_PAD.decode(lines.next().unwrap().strip_prefix("ciphertext: ").unwrap())?;
     let nonce = chacha20poly1305::Nonce::from_slice(&nonce);
-    let plaintext = cipher.decrypt(&nonce, ciphertext.as_ref()).unwrap();
+    let plaintext = cipher.decrypt(&nonce, ciphertext.as_ref()).map_err(|e| anyhow::anyhow!(e))?;
 
     match output {
         "-" => {
@@ -128,7 +131,7 @@ pub fn process_decrypt(input: &str, key: &str, output: &str) -> Result<()> {
         }
         _ => {
             let mut file = fs::File::create(output)?;
-            writeln!(file, "plaintext: {}", String::from_utf8_lossy(&plaintext))?;
+            file.write_all(&plaintext)?;
         }
     }
     Ok(())
