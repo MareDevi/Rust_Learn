@@ -1,3 +1,4 @@
+use crate::{dot_product, Vector};
 use anyhow::{anyhow, Result};
 use std::{
     fmt::{self, Debug, Display},
@@ -5,8 +6,6 @@ use std::{
     sync::mpsc,
     thread,
 };
-
-use crate::Vector;
 
 const NUM_THREADS: usize = 4;
 
@@ -30,21 +29,6 @@ pub struct MsgOutput<T> {
 pub struct Msg<T> {
     input: MsgInput<T>,
     sender: oneshot::Sender<MsgOutput<T>>,
-}
-
-//pretend this is a heavy operation,CPU intensive
-fn dot_product<T>(a: Vector<T>, b: Vector<T>) -> Result<T>
-where
-    T: Add<Output = T> + Mul<Output = T> + AddAssign + Default + Copy,
-{
-    if a.len() != b.len() {
-        return Err(anyhow!("Vector dimensions do not match"));
-    }
-    let mut sum = T::default();
-    for i in 0..a.len() {
-        sum += a[i] * b[i];
-    }
-    Ok(sum)
 }
 
 pub fn multiply<T>(a: &Matrix<T>, b: &Matrix<T>) -> Result<Matrix<T>>
@@ -166,6 +150,18 @@ impl<T> Msg<T> {
         Self { input, sender }
     }
 }
+
+impl<T> Mul for Matrix<T>
+where
+    T: Add<Output = T> + Mul<Output = T> + AddAssign + Default + Copy + Send + 'static,
+{
+    type Output = Matrix<T>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        multiply(&self, &rhs).unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -174,7 +170,7 @@ mod tests {
     fn test_multiply() {
         let a = Matrix::new(vec![1, 2, 3, 4], 2, 2);
         let b = Matrix::new(vec![5, 6, 7, 8], 2, 2);
-        let c = multiply(&a, &b).unwrap();
+        let c = a * b;
         assert_eq!(format!("{}", c), "{19 22, 43 50}");
     }
 
