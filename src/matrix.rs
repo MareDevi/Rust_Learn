@@ -4,10 +4,27 @@ use std::{
     ops::{Add, AddAssign, Mul},
 };
 
+use crate::Vector;
+
 pub struct Matrix<T> {
     data: Vec<T>,
     rows: usize,
     cols: usize,
+}
+
+//pretend this is a heavy operation,CPU intensive
+fn dot_product<T>(a: Vector<T>, b: Vector<T>) -> Result<T>
+where
+    T: Add<Output = T> + Mul<Output = T> + AddAssign + Default + Copy,
+{
+    if a.len() != b.len() {
+        return Err(anyhow!("Vector dimensions do not match"));
+    }
+    let mut sum = T::default();
+    for i in 0..a.len() {
+        sum += a[i] * b[i];
+    }
+    Ok(sum)
 }
 
 pub fn multiply<T>(a: &Matrix<T>, b: &Matrix<T>) -> Result<Matrix<T>>
@@ -21,11 +38,12 @@ where
 
     for i in 0..a.rows {
         for j in 0..b.cols {
-            let mut sum = T::default();
-            for k in 0..a.cols {
-                sum += a.data[i * a.cols + k] * b.data[k * b.cols + j];
-            }
-            data.push(sum);
+            let row = Vector::new(a.data[i * a.cols..(i + 1) * a.cols].to_vec());
+            let column_data = (0..b.rows)
+                .map(|k| b.data[k * b.cols + j])
+                .collect::<Vec<_>>();
+            let column = Vector::new(column_data);
+            data.push(dot_product(row, column)?);
         }
     }
 
