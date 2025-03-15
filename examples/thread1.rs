@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use std::{thread, sync::mpsc};
+use std::{sync::mpsc, thread};
 
 const NUM_PRODUCERS: usize = 4;
 
@@ -24,12 +24,14 @@ fn main() -> Result<()> {
         }
     });
 
-    consumer.join().map_err (| e | anyhow!("Thread join error: {:?}", e))?;
+    consumer
+        .join()
+        .map_err(|e| anyhow!("Thread join error: {:?}", e))?;
 
     Ok(())
 }
 
-fn producer(idx:usize, tx: mpsc::Sender<Msg>) -> Result<()> {
+fn producer(idx: usize, tx: mpsc::Sender<Msg>) -> Result<()> {
     loop {
         let value = rand::random::<usize>();
         tx.send(Msg::new(idx, value))?;

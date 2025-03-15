@@ -1,5 +1,8 @@
-use std::{fmt::{self, Debug, Display}, ops::{Add, AddAssign, Mul}};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use std::{
+    fmt::{self, Debug, Display},
+    ops::{Add, AddAssign, Mul},
+};
 
 pub struct Matrix<T> {
     data: Vec<T>,
@@ -7,9 +10,9 @@ pub struct Matrix<T> {
     cols: usize,
 }
 
-pub fn multiply<T>(a: &Matrix<T>, b: &Matrix<T>) -> Result<Matrix<T>> 
-where 
-    T: Add<Output = T> + Mul<Output = T> + AddAssign + Default + Copy
+pub fn multiply<T>(a: &Matrix<T>, b: &Matrix<T>) -> Result<Matrix<T>>
+where
+    T: Add<Output = T> + Mul<Output = T> + AddAssign + Default + Copy,
 {
     if a.cols != b.rows {
         return Err(anyhow!("Matrix dimensions do not match"));
@@ -35,20 +38,29 @@ where
 
 impl<T: Debug> Matrix<T> {
     pub fn new(data: impl Into<Vec<T>>, rows: usize, cols: usize) -> Self {
-        Self { data: data.into(), rows, cols }
+        Self {
+            data: data.into(),
+            rows,
+            cols,
+        }
     }
 }
 
-impl<T> fmt::Display for Matrix<T> 
-where 
-    T: Display
+impl<T> fmt::Display for Matrix<T>
+where
+    T: Display,
 {
     // display a 2x3 as {1 2 3, 4 5 6}, 3x2 as {1 2, 3 4, 5 6}
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in 0..self.rows {
             write!(f, "{}", if i == 0 { "{" } else { " " })?;
             for j in 0..self.cols {
-                write!(f, "{}{}", if j == 0 { "" } else { " " }, self.data[i * self.cols + j])?;
+                write!(
+                    f,
+                    "{}{}",
+                    if j == 0 { "" } else { " " },
+                    self.data[i * self.cols + j]
+                )?;
             }
             write!(f, "{}", if i == self.rows - 1 { "}" } else { "," })?;
         }
@@ -56,12 +68,16 @@ where
     }
 }
 
-impl<T> fmt::Debug for Matrix<T> 
-where 
-    T: Display + Debug
+impl<T> fmt::Debug for Matrix<T>
+where
+    T: Display + Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Matrix {{ data: {:?}, rows: {}, cols: {} }}", self.data, self.rows, self.cols)
+        write!(
+            f,
+            "Matrix {{ data: {:?}, rows: {}, cols: {} }}",
+            self.data, self.rows, self.cols
+        )
     }
 }
 
@@ -75,5 +91,11 @@ mod tests {
         let b = Matrix::new(vec![5, 6, 7, 8], 2, 2);
         let c = multiply(&a, &b).unwrap();
         assert_eq!(format!("{}", c), "{19 22, 43 50}");
+    }
+
+    #[test]
+    fn test_display() {
+        let a = Matrix::new(vec![1, 2, 3, 4, 5, 6], 2, 3);
+        assert_eq!(format!("{}", a), "{1 2 3, 4 5 6}");
     }
 }
