@@ -1,5 +1,5 @@
 use anyhow::Result;
-use concurrency::matrix::Matrix;
+use concurrency::Matrix;
 
 fn main() -> Result<()> {
     let a = Matrix::new(vec![1, 2, 3, 4], 2, 2);
