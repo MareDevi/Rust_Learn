@@ -18,7 +18,7 @@ fn main() -> Result<()> {
 
     loop {
         thread::sleep(std::time::Duration::from_secs(5));
-        println!("{:?}", metrics.snapshot());
+        println!("{}", metrics);
     }
 }
 
