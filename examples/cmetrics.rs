@@ -1,12 +1,12 @@
 use anyhow::Result;
-use concurrency::Metrics;
+use concurrency::CmapMetrics;
 use std::thread;
 
 const N: usize = 2;
 const M: usize = 4;
 
 fn main() -> Result<()> {
-    let metrics = Metrics::new();
+    let metrics = CmapMetrics::new();
 
     for idx in 0..N {
         task_worker(idx, metrics.clone())?;
@@ -22,7 +22,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn task_worker(idx: usize, metrics: Metrics) -> Result<()> {
+fn task_worker(idx: usize, metrics: CmapMetrics) -> Result<()> {
     thread::spawn(move || {
         loop {
             //do a long term stuff
@@ -41,7 +41,7 @@ fn task_worker(idx: usize, metrics: Metrics) -> Result<()> {
     Ok(())
 }
 
-fn request_worker(metrics: Metrics) -> Result<()> {
+fn request_worker(metrics: CmapMetrics) -> Result<()> {
     thread::spawn(move || {
         loop {
             //do a long term stuff
